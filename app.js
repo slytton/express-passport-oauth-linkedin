@@ -71,7 +71,7 @@ app.get('/auth/linkedin',
   });
 
   app.use(function (req, res, next) {
-    console.log(req.session);
+    //console.log(req.session);
     if(Object.keys(req.session).length) res.locals.user = req.session.passport.user;
     next();
   })
