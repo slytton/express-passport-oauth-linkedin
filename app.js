@@ -3,6 +3,7 @@ var path = require('path');
 var favicon = require('serve-favicon');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
+var cookieSession = require('cookie-session');
 var bodyParser = require('body-parser');
 
 require('dotenv').load();
@@ -25,6 +26,13 @@ app.use(logger('dev'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
+app.use(cookieSession({
+  name: 'session',
+  keys: [
+    process.env.SESSIONKEY1,
+    process.env.SESSIONKEY2
+  ]
+}));
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(passport.initialize());
@@ -34,20 +42,15 @@ passport.use(new LinkedInStrategy({
   clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
   callbackURL: process.env.HOST + "/auth/linkedin/callback",
   scope: ['r_emailaddress', 'r_basicprofile'],
-}, function(accessToken, refreshToken, profile, done) {
-  // asynchronous verification, for effect...
-  process.nextTick(function () {
-    // To keep the example simple, the user's LinkedIn profile is returned to
-    // represent the logged-in user. In a typical application, you would want
-    // to associate the LinkedIn account with a user record in your database,
-    // and return that user instead.
-    return done(null, profile);
-  });
+  state: true,
+},
+function(accessToken, refreshToken, profile, done) {
+  done(null, {id: profile.id, displayName: profile.displayName, token: accessToken})
 }));
 
 
 app.get('/auth/linkedin',
-  passport.authenticate('linkedin', { state: 'SOME STATE'  }),
+  passport.authenticate('linkedin'),
   function(req, res){
     // The request will be redirected to LinkedIn for authentication, so this
     // function will not be called.
@@ -66,6 +69,11 @@ app.get('/auth/linkedin',
   passport.deserializeUser(function(user, done) {
     done(null, user)
   });
+
+  app.use(function (req, res, next) {
+    res.locals.user = req.session.passport.user
+    next()
+  })
 
 app.use('/', routes);
 app.use('/users', users);
