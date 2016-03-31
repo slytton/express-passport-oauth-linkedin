@@ -71,9 +71,15 @@ app.get('/auth/linkedin',
   });
 
   app.use(function (req, res, next) {
-    res.locals.user = req.session.passport.user
-    next()
+    console.log(req.session);
+    if(Object.keys(req.session).length) res.locals.user = req.session.passport.user;
+    next();
   })
+
+app.get('/logout', function(req,res,next) {
+  req.session = undefined;
+  res.redirect('/')
+})
 
 app.use('/', routes);
 app.use('/users', users);
